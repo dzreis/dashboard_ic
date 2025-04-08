@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 from utils.processamento import calcular_frames_por_segundo, calcular_tempos_picos, classificar
 
 def carregar():
@@ -24,18 +25,23 @@ def carregar():
         fps_inicio = calcular_frames_por_segundo(inicio_df, 'time')
         fps_final = calcular_frames_por_segundo(final_df, 'time')
 
-        tempo_inicio = int(len(inicio_df) / fps_inicio)
-        tempo_final = int(len(final_df) / fps_final)
+        conv_tempo_inicial = int(len(inicio_df) / fps_inicio)
+        conv_tempo_final = int(len(final_df) / fps_final)
 
-        st.write(f"⏱️ Tempo total no início: **{tempo_inicio}** segundos")
-        st.write(f"⏱️ Tempo total no final: **{tempo_final}** segundos")
+        # Impressão do tempo de execução em segundos
+        st.write(f"⏱️ Tempo total no INÍCIO: **{conv_tempo_inicial}** segundos")
+        st.write(f"⏱️ Tempo total no FINAL: **{conv_tempo_final}** segundos")
+
+        #
+        tempo_inicio = np.arange(len(inicio_df) / fps_inicio)
+        tempo_final = np.arange(len(final_df) / fps_final)
 
         st.subheader("📉 Gráfico de Amplitude Inicial x Final")
         fig, ax = plt.subplots()
-        ax.plot(inicio_amplitude['shoulderLangle'], label='Início')
-        ax.plot(final_amplitude['shoulderLangle'], label='Final')
-        ax.set_title("Comparação de Amplitude - Ombro Esquerdo")
-        ax.set_xlabel("Frames")
+        ax.plot(tempo_inicio, inicio_amplitude.shoulderLangle, label='Início')
+        ax.plot(tempo_final, final_amplitude.shoulderLangle, label='Final')
+        ax.set_title("Comparação de Amplitude da Articulação Alvo")
+        ax.set_xlabel("Tempo (segundos)")
         ax.set_ylabel("Amplitude")
         ax.legend()
         ax.grid()

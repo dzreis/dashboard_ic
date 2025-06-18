@@ -1,65 +1,180 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
-from utils.processamento import calcular_frames_por_segundo, calcular_tempos_picos, classificar
+import plotly.graph_objects as go
+from utils.processamento import calcular_frames_por_segundo, calcular_tempos_picos, classificar, plot_intervalos_picos
 
 def carregar():
-    st.title("📊 Análise Estatística Inicial")
-    st.subheader("Envio de arquivos CSV")
+    st.title("📊 Dashboard de Análise de Movimento")
+    st.markdown("Envie os arquivos CSV do início e do final da reabilitação para visualizar os gráficos e análises.")
 
     col1, col2 = st.columns(2)
     with col1:
-        inicio_file = st.file_uploader("CSV do Início", type="csv", key="inicio")
+        inicio_file = st.file_uploader("📁 CSV do Início", type="csv", key="inicio")
     with col2:
-        final_file = st.file_uploader("CSV do Final", type="csv", key="final")
+        final_file = st.file_uploader("📁 CSV do Final", type="csv", key="final")
 
-    if inicio_file and final_file:
-        inicio_df = pd.read_csv(inicio_file)
-        final_df = pd.read_csv(final_file)
+    if not (inicio_file and final_file):
+        st.info("Envie ambos os arquivos para iniciar a análise.")
+        return
 
-        colunas_movimento = ['shoulderLangle', 'shoulderRangle']
-        inicio_amplitude = inicio_df[colunas_movimento]
-        final_amplitude = final_df[colunas_movimento]
+    # Leitura dos dados
+    inicio_df = pd.read_csv(inicio_file)
+    final_df = pd.read_csv(final_file)
 
-        fps_inicio = calcular_frames_por_segundo(inicio_df, 'time')
-        fps_final = calcular_frames_por_segundo(final_df, 'time')
+    inicio = inicio_df[['shoulderLangle', 'shoulderRangle']]
+    final = final_df[['shoulderLangle', 'shoulderRangle']]
 
-        conv_tempo_inicial = int(len(inicio_df) / fps_inicio)
-        conv_tempo_final = int(len(final_df) / fps_final)
+    # Cálculo do tempo total
+    fps_inicio = calcular_frames_por_segundo(inicio_df, 'time')
+    fps_final = calcular_frames_por_segundo(final_df, 'time')
 
-        # Impressão do tempo de execução em segundos
-        st.write(f"⏱️ Tempo total no INÍCIO: **{conv_tempo_inicial}** segundos")
-        st.write(f"⏱️ Tempo total no FINAL: **{conv_tempo_final}** segundos")
+    tempo_total_inicio = np.ceil(len(inicio_df) / fps_inicio)
+    tempo_total_final = np.ceil(len(final_df) / fps_final)
 
-        #
-        tempo_inicio = np.arange(len(inicio_df) / fps_inicio)
-        tempo_final = np.arange(len(final_df) / fps_final)
+    st.success(f"🕒 Tempo no início: **{int(tempo_total_inicio)}s**")
+    st.success(f"🕒 Tempo no final: **{int(tempo_total_final)}s**")
 
-        st.subheader("📉 Gráfico de Amplitude Inicial x Final")
-        fig, ax = plt.subplots()
-        ax.plot(tempo_inicio, inicio_amplitude.shoulderLangle, label='Início')
-        ax.plot(tempo_final, final_amplitude.shoulderLangle, label='Final')
-        ax.set_title("Comparação de Amplitude da Articulação Alvo")
-        ax.set_xlabel("Tempo (segundos)")
-        ax.set_ylabel("Amplitude")
-        ax.legend()
-        ax.grid()
-        st.pyplot(fig)
+    # Normalização do tempo
+    tempo_inicio = np.arange(len(inicio_df)) / fps_inicio
+    tempo_final = np.arange(len(final_df)) / fps_final
 
-        # Análise de picos
-        dados_inicio = inicio_amplitude['shoulderLangle']
-        dados_final = final_amplitude['shoulderLangle']
-        amplitude_limite = 55
+    # === Gráfico 1: Amplitude do movimento (início e final)
+    st.markdown("### 📉 Visão geral do movimento (ambos os ombros)")
 
-        picos_i, media_i = calcular_tempos_picos(dados_inicio, fps_inicio, amplitude_limite, 5)
-        picos_f, media_f = calcular_tempos_picos(dados_final, fps_final, amplitude_limite, 2)
+    fig_amp = go.Figure()
+    fig_amp.add_trace(go.Scatter(
+        y=inicio['shoulderLangle'],
+        mode='lines',
+        name='Ombro Esquerdo - Início',
+        line=dict(color='blue')
+    ))
+    fig_amp.add_trace(go.Scatter(
+        y=inicio['shoulderRangle'],
+        mode='lines',
+        name='Ombro Direito - Início',
+        line=dict(color='orange')
+    ))
+    fig_amp.update_layout(
+        title="Movimento no Início do Tratamento",
+        xaxis_title="Frames",
+        yaxis_title="Amplitude (graus)",
+        xaxis=dict(range=[0, 2800]),
+        yaxis=dict(range=[0, 55]),
+        legend=dict(x=0.01, y=0.99),
+        height=400
+    )
+    st.plotly_chart(fig_amp, use_container_width=True)
 
-        st.write(f"📈 Média dos picos iniciais: {media_i:.2f}s")
-        st.write(f"📈 Média dos picos finais: {media_f:.2f}s")
+    # === Gráfico 2: Amplitude normalizada no tempo
+    fig_norm = go.Figure()
+    fig_norm.add_trace(go.Scatter(
+        x=tempo_inicio,
+        y=inicio['shoulderLangle'],
+        mode='lines',
+        name='Ombro Esquerdo - Início',
+        line=dict(color='blue')
+    ))
+    fig_norm.add_trace(go.Scatter(
+        x=tempo_final,
+        y=final['shoulderLangle'],
+        mode='lines',
+        name='Ombro Esquerdo - Final',
+        line=dict(color='red')
+    ))
+    fig_norm.update_layout(
+        title="Amplitude do ombro alvo normalizado",
+        xaxis_title="Tempo (s)",
+        yaxis_title="Amplitude (graus)",
+        xaxis=dict(range=[0, max(tempo_inicio[-1], tempo_final[-1])]),
+        yaxis=dict(range=[0, 70]),
+        legend=dict(x=0.01, y=0.99),
+        height=400
+    )
+    st.plotly_chart(fig_norm, use_container_width=True)
 
-        st.subheader("📌 Classificação de Nível dos Picos")
-        st.write("**Início:**", classificar(picos_i))
-        st.write("**Final:**", classificar(picos_f))
+    # === Estatísticas
+    st.markdown("### 📊 Estatísticas de Amplitude")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Média - Início", round(inicio['shoulderLangle'].mean(), 2))
+        st.metric("Mediana - Início", round(inicio['shoulderLangle'].median(), 2))
+    with col2:
+        st.metric("Média - Final", round(final['shoulderLangle'].mean(), 2))
+        st.metric("Mediana - Final", round(final['shoulderLangle'].median(), 2))
+
+   # === Picos e classificação
+    st.markdown("### 📌 Análise e Classificação de Picos")
+
+    dados_i = inicio['shoulderLangle']
+    dados_f = final['shoulderLangle']
+    limiar_i, limiar_f = 35, 45
+
+    # Cálculo dos picos
+    picos_i, duracoes_i, media_i = calcular_tempos_picos(dados_i, fps_inicio, limiar_i, 5)
+    picos_f, duracoes_f, media_f = calcular_tempos_picos(dados_f, fps_final, limiar_f, 2)
+
+    # Classificação com base nas durações
+    classificacoes_i = classificar(duracoes_i)
+    classificacoes_f = classificar(duracoes_f)
+
+    # Gráficos interativos dos picos
+    st.subheader("🔎 Visualização dos Picos Identificados")
+    tempo_inicio = np.arange(len(dados_i)) / fps_inicio
+    tempo_final = np.arange(len(dados_f)) / fps_final
+
+    fig_i = plot_intervalos_picos(tempo_inicio, dados_i, limiar_i, picos_i, "Picos - Início")
+    fig_f = plot_intervalos_picos(tempo_final, dados_f, limiar_f, picos_f, "Picos - Final")
+
+    st.plotly_chart(fig_i, use_container_width=True)
+    st.plotly_chart(fig_f, use_container_width=True)
+
+    # Estatísticas
+    st.write(f"⏱️ Média dos picos iniciais: **{media_i:.2f}s**")
+    st.write(f"⏱️ Média dos picos finais: **{media_f:.2f}s**")
+
+    if classificacoes_i:
+        st.write("**Classificação Início:**", ', '.join(classificacoes_i))
     else:
-        st.info("Por favor, envie os dois arquivos CSV para iniciar a análise.")
+        st.write("**Classificação Início:** Nenhum pico identificado")
+
+    if classificacoes_f:
+        st.write("**Classificação Final:**", ', '.join(classificacoes_f))
+    else:
+        st.write("**Classificação Final:** Nenhum pico identificado")
+
+    
+    # === Gráfico de Dispersão dos Picos
+    st.markdown("### 🔍 Dispersão dos Picos Iniciais e Finais")
+
+    fig_picos = go.Figure()
+    fig_picos.add_trace(go.Scatter(
+        x=list(range(len(duracoes_i))),
+        y=duracoes_i,
+        mode='markers',
+        name='Picos Iniciais',
+        marker=dict(color='blue', size=10)
+    ))
+    fig_picos.add_trace(go.Scatter(
+        x=list(range(len(duracoes_f))),
+        y=duracoes_f,
+        mode='markers',
+        name='Picos Finais',
+        marker=dict(color='red', size=10)
+    ))
+
+    # Linhas de referência
+    fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
+                        y0=5, y1=5, line=dict(color="green", dash="dash"))
+    fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
+                        y0=9, y1=9, line=dict(color="purple", dash="dash"))
+
+    fig_picos.update_layout(
+        title="Dispersão dos Picos Iniciais e Finais",
+        xaxis_title="Índice dos Picos",
+        yaxis_title="Duração dos Picos (s)",
+        legend=dict(x=0.01, y=0.99),
+        height=400
+    )
+    st.plotly_chart(fig_picos, use_container_width=True)
+

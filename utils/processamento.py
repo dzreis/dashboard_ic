@@ -1,4 +1,5 @@
 import numpy as np
+import plotly.graph_objects as go
 
 def calcular_frames_por_segundo(df, time):
     df['seconds'] = df[time].astype(str).str[-2:]
@@ -31,7 +32,8 @@ def calcular_tempos_picos(dados, frames_por_seg, amplitude_limite, tempo_inicial
     duracoes_picos = [(tempo[final] - tempo[inicio]) for inicio, final in picos_filtrados]
     media_duracao = sum(duracoes_picos) / len(duracoes_picos) if duracoes_picos else 0.0
 
-    return duracoes_picos, media_duracao
+    return picos_filtrados, duracoes_picos, media_duracao
+
 
 def classificar(picos):
     classificacao = []
@@ -43,3 +45,53 @@ def classificar(picos):
         else:
             classificacao.append('Nível 3')
     return classificacao
+
+
+
+def plot_intervalos_picos(tempo, dados, amplitude_limite, picos_filtrados, titulo="Picos Identificados"):
+    fig = go.Figure()
+
+    # Linha principal da amplitude
+    fig.add_trace(go.Scatter(
+        x=tempo,
+        y=dados,
+        mode='lines',
+        name='Amplitude',
+        line=dict(color='blue')
+    ))
+
+    # Linha horizontal do limite
+    fig.add_trace(go.Scatter(
+        x=[tempo[0], tempo[-1]],
+        y=[amplitude_limite, amplitude_limite],
+        mode='lines',
+        name='Limite de Amplitude',
+        line=dict(color='red', dash='dash')
+    ))
+
+    # Faixas destacadas dos picos
+    for inicio, fim in picos_filtrados:
+        fig.add_shape(
+            type='rect',
+            x0=tempo[inicio],
+            x1=tempo[fim],
+            y0=0,
+            y1=max(dados),
+            fillcolor='yellow',
+            opacity=0.3,
+            line_width=0,
+            layer="below"
+        )
+
+    # Layout do gráfico
+    fig.update_layout(
+        title=titulo,
+        xaxis_title='Tempo (segundos)',
+        yaxis_title='Amplitude de Movimento (graus)',
+        yaxis=dict(range=[0, max(dados)]),
+        xaxis=dict(range=[0, max(tempo)]),
+        legend=dict(x=0.01, y=0.99),
+        height=400
+    )
+
+    return fig

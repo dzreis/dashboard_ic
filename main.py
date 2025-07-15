@@ -1,32 +1,23 @@
 import streamlit as st
 
-# DEVE vir aqui, antes de qualquer outro comando do Streamlit
 st.set_page_config(page_title="Dashboard Análise de Interações", layout="wide")
 
 from views import visualizacao_estatistica
+from modelo_aprendizado_maquina import carregar
 
 # Painel lateral fixo
-st.sidebar.title("🏥 Painel de Controle")
-st.sidebar.header("Defina os parâmetros")
+#st.sidebar.title("🏥 Painel de Controle")
 
-uploaded_file = st.sidebar.file_uploader("Envie o arquivo CSV", type=["csv"])
+#uploaded_file = st.sidebar.file_uploader("Envie o arquivo CSV", type=["csv"])
 # Fonte dos dados
-data_source = st.sidebar.selectbox("Fonte dos dados", ["Infravermelho", "RGB"])
-# Grupo de membros
-body_group = st.sidebar.selectbox("Grupo de membros", ["Upper limbs", "Lower limbs"])
-if body_group == "Upper limbs":
-    software_options = ["Pong", "Invaders", "Puzzle", "Counter"]
-else:
-    software_options = ["Barrier", "Maps", "Walk"]
-
-interaction_software = st.sidebar.selectbox("Software de interação", software_options)
+#data_source = st.sidebar.selectbox("Fonte dos dados", ["Infravermelho", "RGB"])
 
 # -------- Navegação por abas no cabeçalho --------
-abas = st.tabs(["🏠 Início", "📊 Visualização Estatística", "🚧 Outra Página"])
+abas = st.tabs(["🏠 Início", "📊 Visualização Estatística", "🤖 Modelo Preditivo", "🚧 Outra Página"])
 
 # -------- Página 1: Instruções --------
 with abas[0]:
-    st.title("🏠 Bem-vindo ao Dashboard de Análise de Interações")
+    st.title("✨Reabilitação assistida por AR: visualização e análise dos dados")
     st.markdown("""
     Este dashboard tem como objetivo auxiliar na análise de dados obtidos a partir de interações com softwares de reabilitação.
 
@@ -36,12 +27,14 @@ with abas[0]:
 
     ### ⚙️ Parâmetros
     - **Fonte dos dados**: Tipo de câmera utilizada (Infravermelho ou RGB).
-    - **Grupo de membros**: Região corporal analisada (superior ou inferior).
-    - **Software de interação**: Jogo ou aplicação utilizada durante a captação dos dados.
 
     ### 📊 Visualização Estatística
     - Página destinada a apresentar análises exploratórias iniciais dos dados enviados.
     - É necessário selecionar os parâmetros corretamente e realizar o upload de um arquivo CSV válido.
+    
+    ### 🤖 Modelo Preditivo
+    - Página dedicada à apresentação de resultados gerados pelo modelo de aprendizado de máquina não supervisionado.
+    - Aqui serão exibidas métricas, clusters identificados ou padrões detectados automaticamente.
 
     ### 🚧 Outra Página
     - Funcionalidade em desenvolvimento.
@@ -51,7 +44,18 @@ with abas[0]:
 with abas[1]:
     visualizacao_estatistica.carregar()
 
-# -------- Página 3: Em construção --------
+# -------- Página 3: Resultados do Modelo Preditivo --------
 with abas[2]:
+    st.title("🤖 Resultados do Modelo de Aprendizado de Máquina")
+    st.markdown("""
+    Nesta seção, você verá os resultados gerados pelos modelos de aprendizado não supervisionado.
+    
+    - Gráficos de agrupamento (ex: K-means, DBSCAN)
+    - Visualização de outliers ou padrões
+    - Métricas como silhouette score ou número de clusters
+    """)
+
+# -------- Página 4: Em construção --------
+with abas[3]:
     st.title("🚧 Página em Construção")
     st.info("Esta funcionalidade está em desenvolvimento. Volte em breve!")

@@ -3,7 +3,7 @@ import streamlit as st
 st.set_page_config(page_title="Dashboard Análise de Interações", layout="wide")
 
 from views import visualizacao_estatistica
-from modelo_aprendizado_maquina import carregar
+from views import modelo_aprendizado_maquina
 
 # Painel lateral fixo
 #st.sidebar.title("🏥 Painel de Controle")
@@ -54,6 +54,7 @@ with abas[2]:
     - Visualização de outliers ou padrões
     - Métricas como silhouette score ou número de clusters
     """)
+    modelo_aprendizado_maquina.carregar()
 
 # -------- Página 4: Em construção --------
 with abas[3]:

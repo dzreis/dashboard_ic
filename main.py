@@ -4,6 +4,7 @@ st.set_page_config(page_title="Dashboard Análise de Interações", layout="wide
 
 from views import visualizacao_estatistica
 from views import modelo_aprendizado_maquina
+from views import ml_teste
 
 # Painel lateral fixo
 #st.sidebar.title("🏥 Painel de Controle")
@@ -54,7 +55,8 @@ with abas[2]:
     - Visualização de outliers ou padrões
     - Métricas como silhouette score ou número de clusters
     """)
-    modelo_aprendizado_maquina.carregar()
+    #modelo_aprendizado_maquina.carregar()
+    ml_teste.carregar()
 
 # -------- Página 4: Em construção --------
 with abas[3]:

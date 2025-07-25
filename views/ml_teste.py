@@ -1,72 +1,92 @@
-import streamlit as st
+import os
 import pandas as pd
+import plotly.express as px
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
-import plotly.express as px
+from glob import glob
+import logging
 
-def carregar():
-    st.title("🤖 Resultados do Modelo de Aprendizado de Máquina")
+# Configurar logs para depuração no terminal
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    uploaded_file = st.file_uploader("Envie seu arquivo CSV para análise", type=["csv"])
+def carregar_dados_treino(pasta_treino, colunas):
+    arquivos_csv = glob(os.path.join(pasta_treino, "*.csv"))
+    dfs = []
+    for arquivo in arquivos_csv:
+        try:
+            df = pd.read_csv(arquivo)
+            if set(colunas).issubset(df.columns):
+                dfs.append(df[colunas].dropna())
+                logger.info(f"Arquivo carregado para treino: {arquivo}")
+            else:
+                logger.warning(f"Colunas esperadas nao encontradas em {arquivo}")
+        except Exception as e:
+            logger.error(f"Erro ao carregar {arquivo}: {e}")
+    if dfs:
+        return pd.concat(dfs, ignore_index=True)
+    return pd.DataFrame()
 
-    if uploaded_file:
-        st.sidebar.header("Configurações do DBSCAN")
-        eps = st.sidebar.slider("eps", min_value=0.1, max_value=2.0, value=0.5, step=0.05)
-        min_samples = st.sidebar.slider("min_samples", min_value=1, max_value=30, value=10, step=1)
+def processar_csv_teste(arquivo_teste, colunas):
+    try:
+        df_teste = pd.read_csv(arquivo_teste)
+        return df_teste[colunas].dropna()
+    except Exception as e:
+        logger.error(f"Erro ao processar arquivo de teste: {e}")
+        return pd.DataFrame()
 
-        fig = processar_e_plotar(uploaded_file, eps=eps, min_samples=min_samples)
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Por favor, envie um arquivo CSV para iniciar a análise.")
-
-def processar_e_plotar(file, eps=0.5, min_samples=10):
-    # 1. Carregar os dados
-    df = pd.read_csv(file)
-
-    # 2. Selecionar as colunas de interesse
-    colunas_modelo = [
-        'shoulderLangle',
-        'shoulderRangle',
-        'elbowLangle',
-        'elbowRangle',
-        'hipLangle',
-        'hipRangle',
-        'kneeLangle',
-        'kneeRangle'
-    ]
-    dados = df[colunas_modelo].dropna()
-
-    # 3. Normalização dos dados
+def treinar_modelo(dados_treino):
     scaler = StandardScaler()
-    dados_norm = scaler.fit_transform(dados)
-
-    # 4. PCA para redução para 2D
+    dados_norm = scaler.fit_transform(dados_treino)
     pca = PCA(n_components=2)
     dados_pca = pca.fit_transform(dados_norm)
+    dbscan = DBSCAN(eps=0.5, min_samples=20)
+    dbscan.fit(dados_pca)
+    logger.info("Modelo DBSCAN treinado com sucesso.")
+    return scaler, pca, dbscan
 
-    # 5. DBSCAN
-    dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-    clusters = dbscan.fit_predict(dados_pca)
+def aplicar_modelo(dados_teste, scaler, pca, modelo):
+    dados_norm = scaler.transform(dados_teste)
+    dados_pca = pca.transform(dados_norm)
+    clusters = modelo.fit_predict(dados_pca)
+    logger.info("Modelo DBSCAN aplicado ao conjunto de teste.")
+    return dados_pca, clusters
 
-    # 6. Preparar DataFrame para plot
-    df_plot = pd.DataFrame({
-        'PC1': dados_pca[:, 0],
-        'PC2': dados_pca[:, 1],
-        'Cluster': clusters.astype(str)  # para plotly tratar como categórico
-    })
-
-    # 7. Plot interativo com Plotly Express
-    fig = px.scatter(
-        df_plot,
-        x='PC1',
-        y='PC2',
-        color='Cluster',
-        title='Padrões de Movimento Detectados com DBSCAN + PCA',
-        labels={'PC1': 'Componente Principal 1', 'PC2': 'Componente Principal 2'},
-        color_discrete_sequence=px.colors.qualitative.Safe
-    )
-    fig.update_traces(marker=dict(size=8, line=dict(width=0.5, color='DarkSlateGrey')))
+def gerar_grafico_plotly(dados_pca, clusters):
+    df_plot = pd.DataFrame(dados_pca, columns=['PC1', 'PC2'])
+    df_plot['Cluster'] = clusters.astype(str)
+    fig = px.scatter(df_plot, x='PC1', y='PC2', color='Cluster',
+                     title='Padrões de Movimento Detectados (DBSCAN + PCA)',
+                     labels={'PC1': 'Componente Principal 1', 'PC2': 'Componente Principal 2'},
+                     color_discrete_sequence=px.colors.qualitative.Set1)
     fig.update_layout(legend_title_text='Cluster')
-
     return fig
+
+def processar_e_plotar(arquivo_teste, pasta_treino):
+    colunas_modelo = [
+        'shoulderLangle', 'shoulderRangle', 'elbowLangle', 'elbowRangle',
+        'hipLangle', 'hipRangle', 'kneeLangle', 'kneeRangle'
+    ]
+
+    dados_treino = carregar_dados_treino(pasta_treino, colunas_modelo)
+    if dados_treino.empty:
+        logger.warning("Nenhum dado de treino válido encontrado.")
+        return None, None, "Nenhum dado de treino válido encontrado."
+
+    dados_teste = processar_csv_teste(arquivo_teste, colunas_modelo)
+    if dados_teste.empty:
+        logger.warning("Dados de teste inválidos ou vazios.")
+        return None, None, "Dados de teste inválidos ou vazios."
+
+    scaler, pca, modelo = treinar_modelo(dados_treino)
+    dados_pca_teste, clusters_teste = aplicar_modelo(dados_teste, scaler, pca, modelo)
+    fig = gerar_grafico_plotly(dados_pca_teste, clusters_teste)
+
+    interpretacao = (
+        "🔴 Foram detectados padrões de movimento incomuns (possíveis compensações)."
+        if -1 in clusters_teste else
+        "🟢 Todos os padrões detectados estão dentro da normalidade esperada."
+    )
+
+    return fig, clusters_teste, interpretacao

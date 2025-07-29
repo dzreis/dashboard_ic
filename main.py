@@ -6,6 +6,11 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import streamlit as st
 
+from views import visualizacao_estatistica
+from views import ml_teste
+
+st.set_page_config(page_title="Dashboard Análise de Interações", layout="wide")
+
 # Configuração do logger
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -76,3 +81,49 @@ def processar_e_plotar(uploaded_file, pasta_treinamento):
     except Exception as e:
         logger.exception("Erro durante o processamento do modelo")
         st.error(f"Erro ao processar os dados: {e}")
+
+# ----------------- INTERFACE ------------------
+
+st.title("🧠 Análise de Interações - Reabilitação Motora")
+
+# -------- Navegação por abas --------
+abas = st.tabs(["🏠 Início", "📊 Visualização Estatística", "🤖 Modelo Preditivo", "🚧 Outra Página"])
+
+# -------- Página 1: Instruções --------
+with abas[0]:
+    st.title("✨Reabilitação assistida por AR: visualização e análise dos dados")
+    st.markdown("""
+    Este dashboard tem como objetivo auxiliar na análise de dados obtidos a partir de interações com softwares de reabilitação.
+                
+    ### 📁 Upload de Arquivo
+    - O arquivo deve estar no formato **.CSV**.
+    - Faça o envio utilizando a barra lateral à esquerda.
+                
+    ### ⚙️ Parâmetros
+    - **Fonte dos dados**: Tipo de câmera utilizada (Infravermelho ou RGB).
+
+    ### 📊 Visualização Estatística
+    - Página destinada a apresentar análises exploratórias iniciais dos dados enviados.
+
+    ### 🤖 Modelo Preditivo
+    - Página dedicada à apresentação de resultados gerados pelo modelo de aprendizado de máquina não supervisionado.
+    """)
+
+# -------- Página 2: Visualização Estatística --------
+with abas[1]:
+    visualizacao_estatistica.carregar()
+
+# -------- Página 3: Resultados do Modelo Preditivo --------
+with abas[2]:
+    st.title("🤖 Resultados do Modelo de Aprendizado de Máquina")
+
+    uploaded_file = st.sidebar.file_uploader("📁 Envie o arquivo CSV do paciente", type="csv")
+    pasta_treinamento = "treino"  # ajuste se necessário
+
+    if st.sidebar.button("🔍 Analisar"):
+        processar_e_plotar(uploaded_file, pasta_treinamento)
+
+# -------- Página 4: Em construção --------
+with abas[3]:
+    st.title("🚧 Página em Construção")
+    st.info("Esta funcionalidade está em desenvolvimento. Volte em breve!")

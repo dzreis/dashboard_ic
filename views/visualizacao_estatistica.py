@@ -59,8 +59,6 @@ def carregar():
         title="Movimento no Início do Tratamento",
         xaxis_title="Frames",
         yaxis_title="Amplitude (graus)",
-        xaxis=dict(range=[0, 2800]),
-        yaxis=dict(range=[0, 55]),
         legend=dict(x=0.01, y=0.99),
         height=400
     )
@@ -83,11 +81,9 @@ def carregar():
         line=dict(color='red')
     ))
     fig_norm.update_layout(
-        title="Amplitude do ombro alvo normalizado",
+        title="Amplitude do Ombro Esquerdo Normalizado",
         xaxis_title="Tempo (s)",
         yaxis_title="Amplitude (graus)",
-        xaxis=dict(range=[0, max(tempo_inicio[-1], tempo_final[-1])]),
-        yaxis=dict(range=[0, 70]),
         legend=dict(x=0.01, y=0.99),
         height=400
     )
@@ -103,12 +99,19 @@ def carregar():
         st.metric("Média - Final", round(final['shoulderLangle'].mean(), 2))
         st.metric("Mediana - Final", round(final['shoulderLangle'].median(), 2))
 
-   # === Picos e classificação
+    # === Limiar definido pelo usuário
+    st.markdown("### ⚙️ Definir Limiar para Análise de Picos")
+    col1, col2 = st.columns(2)
+    with col1:
+        limiar_i = st.number_input("Limiar Início (graus)", min_value=0.0, max_value=180.0, value=35.0, step=1.0)
+    with col2:
+        limiar_f = st.number_input("Limiar Final (graus)", min_value=0.0, max_value=180.0, value=45.0, step=1.0)
+
+    # === Picos e classificação
     st.markdown("### 📌 Análise e Classificação de Picos")
 
     dados_i = inicio['shoulderLangle']
     dados_f = final['shoulderLangle']
-    limiar_i, limiar_f = 35, 45
 
     # Cálculo dos picos
     picos_i, duracoes_i, media_i = calcular_tempos_picos(dados_i, fps_inicio, limiar_i, 5)
@@ -143,7 +146,6 @@ def carregar():
     else:
         st.write("**Classificação Final:** Nenhum pico identificado")
 
-    
     # === Gráfico de Dispersão dos Picos
     st.markdown("### 🔍 Dispersão dos Picos Iniciais e Finais")
 
@@ -163,7 +165,6 @@ def carregar():
         marker=dict(color='red', size=10)
     ))
 
-    # Linhas de referência
     fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
                         y0=5, y1=5, line=dict(color="green", dash="dash"))
     fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
@@ -177,4 +178,3 @@ def carregar():
         height=400
     )
     st.plotly_chart(fig_picos, use_container_width=True)
-

@@ -1,13 +1,10 @@
 import os
 import logging
 import pandas as pd
-import plotly.express as px
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 import streamlit as st
 
 from views import visualizacao_estatistica
-from views import ml_teste
+from views import ml_teste  # importa o pipeline completo com PCA + DBSCAN
 
 st.set_page_config(page_title="Dashboard Análise de Interações", layout="wide")
 
@@ -15,74 +12,7 @@ st.set_page_config(page_title="Dashboard Análise de Interações", layout="wide
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Colunas usadas no modelo
-colunas_modelo = [
-    'shoulderLangle', 'shoulderRangle',
-    'elbowLangle', 'elbowRangle',
-    'hipLangle', 'hipRangle',
-    'kneeLangle', 'kneeRangle'
-]
-
-def carregar_dados_treinamento(pasta_treinamento):
-    logger.debug(f"Lendo arquivos da pasta de treino: {pasta_treinamento}")
-    dados_treinamento = []
-    for arquivo in os.listdir(pasta_treinamento):
-        if arquivo.endswith(".csv"):
-            caminho = os.path.join(pasta_treinamento, arquivo)
-            df = pd.read_csv(caminho)
-            df = df[colunas_modelo]
-            dados_treinamento.append(df)
-    return pd.concat(dados_treinamento, ignore_index=True)
-
-def carregar_dados_teste(arquivo):
-    logger.debug(f"Carregando dados de teste do arquivo: {arquivo.name}")
-    df = pd.read_csv(arquivo)
-    return df[colunas_modelo]
-
-def treinar_modelo(dados, n_clusters=3):
-    logger.debug("Iniciando padronização e treinamento do modelo")
-    scaler = StandardScaler()
-    dados_normalizados = scaler.fit_transform(dados)
-    modelo = KMeans(n_clusters=n_clusters, random_state=42)
-    modelo.fit(dados_normalizados)
-    return modelo, scaler
-
-def testar_modelo(modelo, scaler, dados_teste):
-    logger.debug("Aplicando modelo aos dados de teste")
-    dados_teste_normalizados = scaler.transform(dados_teste)
-    predicoes = modelo.predict(dados_teste_normalizados)
-    return predicoes
-
-def exibir_resultados(dados_teste, predicoes):
-    logger.debug("Gerando visualização dos resultados")
-    df_resultado = dados_teste.copy()
-    df_resultado['cluster'] = predicoes
-    fig = px.scatter_matrix(df_resultado, dimensions=colunas_modelo, color='cluster',
-                            title="Visualização dos Clusters nos Dados do Paciente")
-    st.plotly_chart(fig, use_container_width=True)
-
-    padrao = "❌ Possível padrão de compensação identificado."
-    if len(set(predicoes)) > 1:
-        st.warning(padrao)
-    else:
-        st.success("✅ Movimento consistente — sem padrão de compensação detectado.")
-
-def processar_e_plotar(uploaded_file, pasta_treinamento):
-    if uploaded_file is None:
-        st.info("Envie um arquivo CSV para análise.")
-        return
-
-    try:
-        dados_treinamento = carregar_dados_treinamento(pasta_treinamento)
-        dados_teste = carregar_dados_teste(uploaded_file)
-        modelo, scaler = treinar_modelo(dados_treinamento)
-        predicoes = testar_modelo(modelo, scaler, dados_teste)
-        exibir_resultados(dados_teste, predicoes)
-    except Exception as e:
-        logger.exception("Erro durante o processamento do modelo")
-        st.error(f"Erro ao processar os dados: {e}")
-
-# ----------------- INTERFACE ------------------
+# ----------- INTERFACE PRINCIPAL ------------------
 
 st.title("🧠 Análise de Interações - Reabilitação Motora")
 
@@ -117,11 +47,59 @@ with abas[1]:
 with abas[2]:
     st.title("🤖 Resultados do Modelo de Aprendizado de Máquina")
 
+    st.markdown("""
+    ### 🧠 Análise de Padrões de Movimento Corporal
+
+    Esta seção apresenta uma análise automática dos dados de movimento do paciente, com base em um modelo de aprendizado de máquina. 
+    O objetivo é **identificar grupos (clusters) com padrões semelhantes de movimento** em diferentes partes do corpo, permitindo a 
+    detecção de possíveis **compensações, assimetrias ou desvios**.
+
+    #### 📌 O que você está vendo:
+
+    - **Gráfico de Dispersão**:  
+    Mostra as execuções do paciente agrupadas em cores diferentes, com base na semelhança geral dos movimentos.  
+    Cada ponto representa um conjunto de dados, e os grupos (clusters) podem indicar padrões de movimento distintos.
+
+    - **Gráfico de Barras**:  
+    Apresenta a **média de movimento** por parte do corpo dentro de cada grupo identificado.  
+    Isso permite comparar, por exemplo, se um grupo utiliza mais o cotovelo direito do que o esquerdo, sugerindo compensação do movimento.
+
+    - **Tabela de Médias por Grupo**:  
+    Resume os valores médios de movimento (ângulos) de cada articulação para cada grupo.  
+    Essa tabela ajuda a entender o comportamento típico de cada cluster e facilita a identificação de desequilíbrios.
+
+    - **Interpretação Automática**:  
+    Um texto resumido com os principais padrões identificados nos grupos, facilitando a análise clínica sem necessidade de conhecimento 
+    técnico em modelos de inteligência artificial.
+    """)
+
     uploaded_file = st.sidebar.file_uploader("📁 Envie o arquivo CSV do paciente", type="csv")
     pasta_treinamento = "treino"  # ajuste se necessário
 
     if st.sidebar.button("🔍 Analisar"):
-        processar_e_plotar(uploaded_file, pasta_treinamento)
+        if uploaded_file is None:
+            st.info("Envie um arquivo CSV para análise.")
+        else:
+            # Chamada da função principal do ml_teste.py
+            (fig_pca, fig_barras), clusters, interpretacao, tabela = ml_teste.processar_e_plotar(uploaded_file, pasta_treinamento)
+
+            if fig_pca and fig_barras:
+                st.subheader("Gráfico de Dispersão com PCA")
+                st.plotly_chart(fig_pca, use_container_width=True)
+
+                st.subheader("Gráfico de Médias por Cluster")
+                st.plotly_chart(fig_barras, use_container_width=True)
+
+                st.markdown(f"### 🧾 Interpretação")
+                st.success(interpretacao)
+
+                st.markdown("### 📄 Informações Médias por Cluster")
+                colunas_numericas = tabela.select_dtypes(include=['float', 'int']).columns
+                st.dataframe(tabela.style.format({col: "{:.2f}" for col in colunas_numericas}))
+            
+            else:
+                st.warning(interpretacao)
+
 
 # -------- Página 4: Em construção --------
 with abas[3]:

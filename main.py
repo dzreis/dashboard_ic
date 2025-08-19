@@ -69,8 +69,13 @@ with abas[2]:
     Essa tabela ajuda a entender o comportamento típico de cada cluster e facilita a identificação de desequilíbrios.
 
     - **Interpretação Automática**:  
-    Um texto resumido com os principais padrões identificados nos grupos, facilitando a análise clínica sem necessidade de conhecimento 
-    técnico em modelos de inteligência artificial.
+    A interpretação é a parte mais essencial nesse momento, principalmente por parte do profissional da saúde, para auxilia-lo, um texto resumido
+    com os principais padrões identificados nos grupos, facilitando a análise clínica sem necessidade de conhecimento técnico em modelos de
+    inteligência artificial.
+                
+    - **Pontos Fora do Padrão (Cluster -1)**:  
+    Quando o modelo detecta movimentos muito diferentes dos demais, eles aparecem neste grupo especial.  
+    Esses pontos podem indicar **compensações ou execuções atípicas** e merecem atenção especial.
     """)
 
     uploaded_file = st.sidebar.file_uploader("📁 Envie o arquivo CSV do paciente", type="csv")
@@ -81,7 +86,7 @@ with abas[2]:
             st.info("Envie um arquivo CSV para análise.")
         else:
             # Chamada da função principal do ml_teste.py
-            (fig_pca, fig_barras), clusters, interpretacao, tabela = ml_teste.processar_e_plotar(uploaded_file, pasta_treinamento)
+            (fig_pca, fig_barras), clusters, interpretacao, tabela, pontos_outliers = ml_teste.processar_e_plotar(uploaded_file, pasta_treinamento)
 
             if fig_pca and fig_barras:
                 st.subheader("Gráfico de Dispersão com PCA")
@@ -90,13 +95,19 @@ with abas[2]:
                 st.subheader("Gráfico de Médias por Cluster")
                 st.plotly_chart(fig_barras, use_container_width=True)
 
-                st.markdown(f"### 🧾 Interpretação")
-                st.success(interpretacao)
-
                 st.markdown("### 📄 Informações Médias por Cluster")
                 colunas_numericas = tabela.select_dtypes(include=['float', 'int']).columns
                 st.dataframe(tabela.style.format({col: "{:.2f}" for col in colunas_numericas}))
-            
+
+                st.markdown(f"### 🧾 Interpretação")
+                st.success(interpretacao)
+
+                # Exibir outliers se houver
+                if pontos_outliers is not None and not pontos_outliers.empty:
+                    st.markdown("### ⚠️ Movimentos Fora do Padrão (Cluster -1)")
+                    st.warning("Os movimentos abaixo foram classificados como **compensações ou execuções atípicas**.")
+                    st.dataframe(pontos_outliers)
+
             else:
                 st.warning(interpretacao)
 

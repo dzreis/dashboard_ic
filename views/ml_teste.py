@@ -146,7 +146,84 @@ def gerar_graficos_interpretaveis(dados_teste, dados_pca, clusters):
     return fig_pca, fig_barras, medias
 
 
+def identificar_outliers(dados_teste, clusters):
+    """
+    Identifica os pontos classificados como -1 pelo DBSCAN e 
+    destaca quais articulações mais se desviam da média (procura por compensações).
 
+    Retorna:
+        outliers (DataFrame): Apenas os pontos fora do padrão.
+        explicacoes (list): Lista de mensagens com articulações mais impactadas.
+    """
+    outliers = dados_teste[clusters == -1]
+    if outliers.empty:
+        return outliers, []
+
+    medias = dados_teste.mean()
+    explicacoes = []
+
+    for i, linha in outliers.iterrows():
+        # Calcula diferença absoluta em relação à média
+        diferencas = (linha - medias).abs()
+        # Seleciona as 2 maiores variações
+        top_variaveis = diferencas.sort_values(ascending=False).head(2).index.tolist()
+        explicacoes.append(f"Registro {i}: variações fora do esperado em {', '.join(top_variaveis)}")
+
+    return outliers, explicacoes
+
+
+def processar_e_plotar(arquivo_teste, pasta_treino):
+    """
+    Função principal que executa todo o pipeline:
+    - Carrega os dados
+    - Treina o modelo
+    - Aplica no teste
+    - Gera gráfico
+    - Cria uma interpretação simplificada para o usuário
+
+    Retorna:
+        figs (tuple): Gráficos para o Streamlit (PCA e Barras).
+        clusters_teste (array): Rótulos dos clusters detectados.
+        interpretacao (str): Mensagem simples para o profissional.
+        tabela_resumo (DataFrame): Médias por cluster.
+        explicacoes_outliers (list): Explicações sobre os outliers detectados.
+    """
+    colunas_modelo = [
+        'shoulderLangle', 'shoulderRangle',
+        'elbowLangle', 'elbowRangle',
+        'hipLangle', 'hipRangle',
+        'kneeLangle', 'kneeRangle'
+    ]
+
+    dados_treino = carregar_dados_treino(pasta_treino, colunas_modelo)
+    if dados_treino.empty:
+        logger.warning("Nenhum dado de treino válido encontrado.")
+        return None, None, "⚠️ Nenhum dado de treino válido encontrado.", None, []
+
+    dados_teste = processar_csv_teste(arquivo_teste, colunas_modelo)
+    if dados_teste.empty:
+        logger.warning("Dados de teste inválidos ou vazios.")
+        return None, None, "⚠️ Arquivo de teste inválido ou com dados ausentes.", None, []
+
+    scaler, pca, modelo = treinar_modelo(dados_treino)
+    dados_pca_teste, clusters_teste = aplicar_modelo(dados_teste, scaler, pca, modelo)
+
+    # Gerar visualização interpretável
+    fig_pca, fig_barras, tabela_resumo = gerar_graficos_interpretaveis(dados_teste, dados_pca_teste, clusters_teste)
+
+    # Identificar outliers (-1) e explicar
+    outliers, explicacoes_outliers = identificar_outliers(dados_teste, clusters_teste)
+
+    interpretacao = (
+        "🔴 Foram detectados padrões de movimento incomuns (possíveis compensações)."
+        if -1 in clusters_teste else
+        "🟢 Todos os padrões de movimento estão dentro da normalidade esperada."
+    )
+
+    return (fig_pca, fig_barras), clusters_teste, interpretacao, tabela_resumo, explicacoes_outliers
+
+
+'''
 def processar_e_plotar(arquivo_teste, pasta_treino):
     """
     Função principal que executa todo o pipeline:
@@ -191,3 +268,4 @@ def processar_e_plotar(arquivo_teste, pasta_treino):
     )
 
     return (fig_pca, fig_barras), clusters_teste, interpretacao, tabela_resumo
+'''

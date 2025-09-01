@@ -74,7 +74,7 @@ def treinar_modelo(dados_treino):
     pca = PCA(n_components=2)  # Reduz para duas dimensões para visualização
     dados_pca = pca.fit_transform(dados_norm)
 
-    dbscan = DBSCAN(eps=0.5, min_samples=20)  # Parâmetros podem ser ajustados depois
+    dbscan = DBSCAN(eps=0.6, min_samples=30)  # Parâmetros podem ser ajustados depois
     dbscan.fit(dados_pca)
 
     logger.info("Modelo DBSCAN treinado com sucesso.")

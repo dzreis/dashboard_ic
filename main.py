@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 st.title("🧠 Análise de Interações - Reabilitação Motora")
 
 # -------- Navegação por abas --------
-abas = st.tabs(["🏠 Início", "📊 Visualização Estatística", "🤖 Modelo Preditivo", "🚧 Outra Página"])
+abas = st.tabs(["🏠 Início", "📊 Visualização Estatística", "🤖 Modelo Preditivo"])
 
 # -------- Página 1: Instruções --------
 with abas[0]:
@@ -111,8 +111,3 @@ with abas[2]:
             else:
                 st.warning(interpretacao)
 
-
-# -------- Página 4: Em construção --------
-with abas[3]:
-    st.title("🚧 Página em Construção")
-    st.info("Esta funcionalidade está em desenvolvimento. Volte em breve!")

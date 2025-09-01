@@ -108,7 +108,7 @@ def carregar():
         limiar_f = st.number_input("Limiar Final (graus)", min_value=0.0, max_value=180.0, value=45.0, step=1.0)
 
     # === Picos e classificação
-    st.markdown("### 📌 Análise e Classificação de Picos")
+    st.markdown("### 📌 Análise e Classificação do Movimento Esperado")
 
     dados_i = inicio['shoulderLangle']
     dados_f = final['shoulderLangle']
@@ -122,19 +122,19 @@ def carregar():
     classificacoes_f = classificar(duracoes_f)
 
     # Gráficos interativos dos picos
-    st.subheader("🔎 Visualização dos Picos Identificados")
+    st.subheader("🔎 Identificação do Movimento Esperado")
     tempo_inicio = np.arange(len(dados_i)) / fps_inicio
     tempo_final = np.arange(len(dados_f)) / fps_final
 
-    fig_i = plot_intervalos_picos(tempo_inicio, dados_i, limiar_i, picos_i, "Picos - Início")
-    fig_f = plot_intervalos_picos(tempo_final, dados_f, limiar_f, picos_f, "Picos - Final")
+    fig_i = plot_intervalos_picos(tempo_inicio, dados_i, limiar_i, picos_i, "Movimento Esperado - Início")
+    fig_f = plot_intervalos_picos(tempo_final, dados_f, limiar_f, picos_f, "Movimento Esperado - Final")
 
     st.plotly_chart(fig_i, use_container_width=True)
     st.plotly_chart(fig_f, use_container_width=True)
 
     # Estatísticas
-    st.write(f"⏱️ Média dos picos iniciais: **{media_i:.2f}s**")
-    st.write(f"⏱️ Média dos picos finais: **{media_f:.2f}s**")
+    st.write(f"⏱️ Média dos movimentos iniciais: **{media_i:.2f}s**")
+    st.write(f"⏱️ Média dos movimentos finais: **{media_f:.2f}s**")
 
     if classificacoes_i:
         st.write("**Classificação Início:**", ', '.join(classificacoes_i))
@@ -147,21 +147,21 @@ def carregar():
         st.write("**Classificação Final:** Nenhum pico identificado")
 
     # === Gráfico de Dispersão dos Picos
-    st.markdown("### 🔍 Dispersão dos Picos Iniciais e Finais")
+    st.markdown("### 🔍 Dispersão - Nível dos Movimentos Iniciais e Finais")
 
     fig_picos = go.Figure()
     fig_picos.add_trace(go.Scatter(
         x=list(range(len(duracoes_i))),
         y=duracoes_i,
         mode='markers',
-        name='Picos Iniciais',
+        name='Movimentos Iniciais',
         marker=dict(color='blue', size=10)
     ))
     fig_picos.add_trace(go.Scatter(
         x=list(range(len(duracoes_f))),
         y=duracoes_f,
         mode='markers',
-        name='Picos Finais',
+        name='Movimentos Finais',
         marker=dict(color='red', size=10)
     ))
 
@@ -171,9 +171,9 @@ def carregar():
                         y0=9, y1=9, line=dict(color="purple", dash="dash"))
 
     fig_picos.update_layout(
-        title="Dispersão dos Picos Iniciais e Finais",
-        xaxis_title="Índice dos Picos",
-        yaxis_title="Duração dos Picos (s)",
+        title="Dispersão dos Movimentos Iniciais e Finais",
+        xaxis_title="Índice",
+        yaxis_title="Duração (s)",
         legend=dict(x=0.01, y=0.99),
         height=400
     )

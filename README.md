@@ -1,6 +1,6 @@
 # ESTUDO E APLICAÇÃO DE TÉCNICAS DE APRENDIZAGEM DE MÁQUINA EM DADOS CINEMÁTICOS GERADOS POR VISÃO COMPUTACIONAL
 
-## 🎯 Sobre o Projeto (Resumo Executivo)
+## 🎯 Sobre o Projeto
 
 Este projeto de Iniciação Científica explorou a integração de **Inteligência Artificial (IA)**, **Aprendizado de Máquina (AM)** e **Visão Computacional (VC)** para a análise de dados cinemáticos de pacientes em reabilitação motora e neurofuncional.
 
@@ -20,19 +20,32 @@ A ferramenta foi desenvolvida para transformar dados brutos de movimento, gerado
 | Categoria | Tecnologia | Uso Principal |
 | :--- | :--- | :--- |
 | **Linguagem** | Python | Linguagem principal do projeto |
-| **Web App/Interface** | Streamlit | Desenvolvimento da interface do dashboard  |
+| **Web App/Interface** | Streamlit | Desenvolvimento da interface do dashboard  |
 | **Processamento de Dados** | Pandas, NumPy | Manipulação, limpeza e normalização dos dados cinemáticos |
 | **Visualização** | Plotly | Criação de gráficos interativos para o dashboard |
 | **Aprendizado de Máquina** | Scikit-learn | Testes exploratórios com algoritmos de agrupamento (DBSCAN, K-Means) |
 
-## 🚧 Resultados da Pesquisa e Limitações do AM
+## 🚀 Como Usar/Reproduzir o Projeto
 
-A fase de testes com algoritmos de Aprendizado de Máquina Não Supervisionado (DBSCAN), embora não tenha resultado em um modelo final e robusto, gerou contribuições importantes:
+Siga os passos abaixo para clonar o repositório, instalar as dependências e rodar o dashboard interativo na sua máquina local.
 
-* **Limitação do Dataset:** Os modelos não geraram agrupamentos (clusters) claros e clinicamente interpretáveis devido à natureza restrita, ruidosa e não padronizada da base de dados disponível.
-* **Lição Aprendida:** A qualidade, quantidade e padronização da base de dados são fatores decisivos para o sucesso da aplicação de AM em cenários clínicos de reabilitação.
+### Pré-requisitos
+Certifique-se de ter o **Python (versão 3.x)** instalado em seu sistema.
 
-## 🚀 Próximos Passos
+### Passo a Passo
 
-* **Validação Clínica:** Realizar a validação do dashboard em ambientes clínicos reais (hospitais e clínicas) para comprovar sua usabilidade e eficácia.
-* **Expansão do AM:** Continuar os testes com modelos de AM mais avançados (ex: redes neurais) em conjunto com a construção de uma base de dados mais ampla e padronizada.
+1.  **Clone o repositório** para a sua máquina local:
+    ```bash
+    git clone https://github.com/dzreis/dashboard_ic.git
+    cd dashboard_ic
+    ```
+
+2.  **Instale os pacotes e dependências** necessárias, listadas no arquivo `requirements.txt`:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Execute a aplicação** usando o Streamlit. O dashboard será aberto automaticamente no seu navegador padrão:
+    ```bash
+    streamlit run main.py
+    ```

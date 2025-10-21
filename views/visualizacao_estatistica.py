@@ -64,117 +64,151 @@ def carregar():
     )
     st.plotly_chart(fig_amp, use_container_width=True)
 
-    # === Gráfico 2: Amplitude normalizada no tempo
-    fig_norm = go.Figure()
-    fig_norm.add_trace(go.Scatter(
-        x=tempo_inicio,
-        y=inicio['shoulderLangle'],
-        mode='lines',
-        name='Ombro Esquerdo - Início',
-        line=dict(color='blue')
-    ))
-    fig_norm.add_trace(go.Scatter(
-        x=tempo_final,
-        y=final['shoulderLangle'],
-        mode='lines',
-        name='Ombro Esquerdo - Final',
-        line=dict(color='red')
-    ))
-    fig_norm.update_layout(
-        title="Amplitude do Ombro Esquerdo Normalizado",
-        xaxis_title="Tempo (s)",
-        yaxis_title="Amplitude (graus)",
-        legend=dict(x=0.01, y=0.99),
-        height=400
+    # === Escolha do lado para análise detalhada
+    st.markdown("### 🦾 Escolha o lado para análise detalhada")
+
+    # inicializa o estado se ainda não existir
+    if "lado_escolhido" not in st.session_state:
+        st.session_state.lado_escolhido = None
+
+    # menu com placeholder (sem seleção inicial)
+    lado_opcoes = ["Esquerdo", "Direito"]
+    lado_escolhido = st.selectbox(
+        "Selecione o ombro a ser analisado:",
+        options=["Selecione..."] + lado_opcoes,
+        index=0,
+        key="lado_selector"
     )
-    st.plotly_chart(fig_norm, use_container_width=True)
 
-    # === Estatísticas
-    st.markdown("### 📊 Estatísticas de Amplitude")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Média - Início", round(inicio['shoulderLangle'].mean(), 2))
-        st.metric("Mediana - Início", round(inicio['shoulderLangle'].median(), 2))
-    with col2:
-        st.metric("Média - Final", round(final['shoulderLangle'].mean(), 2))
-        st.metric("Mediana - Final", round(final['shoulderLangle'].median(), 2))
+    # só prossegue se o usuário escolher algo diferente do placeholder
+    if lado_escolhido != "Selecione...":
+        st.session_state.lado_escolhido = lado_escolhido
+        st.success(f"Lado selecionado: **{lado_escolhido}**")
 
-    # === Limiar definido pelo usuário
-    st.markdown("### ⚙️ Definir Limiar para Análise de Picos")
-    col1, col2 = st.columns(2)
-    with col1:
-        limiar_i = st.number_input("Limiar Início (graus)", min_value=0.0, max_value=180.0, value=35.0, step=1.0)
-    with col2:
-        limiar_f = st.number_input("Limiar Final (graus)", min_value=0.0, max_value=180.0, value=45.0, step=1.0)
+        # Define as colunas com base na escolha
+        if lado_escolhido == "Esquerdo":
+            coluna_inicio = 'shoulderLangle'
+            coluna_final = 'shoulderLangle'
+            cor_lado = 'blue'
+        else:
+            coluna_inicio = 'shoulderRangle'
+            coluna_final = 'shoulderRangle'
+            cor_lado = 'orange'
 
-    # === Picos e classificação
-    st.markdown("### 📌 Análise e Classificação do Movimento Esperado")
+        # === Gráfico 2: Amplitude normalizada no tempo
+        fig_norm = go.Figure()
+        fig_norm.add_trace(go.Scatter(
+            x=tempo_inicio,
+            y=inicio[coluna_inicio],
+            mode='lines',
+            name=f'Ombro {lado_escolhido} - Início',
+            line=dict(color=cor_lado)
+        ))
+        fig_norm.add_trace(go.Scatter(
+            x=tempo_final,
+            y=final[coluna_final],
+            mode='lines',
+            name=f'Ombro {lado_escolhido} - Final',
+            line=dict(color='red')
+        ))
+        fig_norm.update_layout(
+            title=f"Amplitude do Ombro {lado_escolhido} Normalizado",
+            xaxis_title="Tempo (s)",
+            yaxis_title="Amplitude (graus)",
+            legend=dict(x=0.01, y=0.99),
+            height=400
+        )
+        st.plotly_chart(fig_norm, use_container_width=True)
 
-    dados_i = inicio['shoulderLangle']
-    dados_f = final['shoulderLangle']
+        # === Estatísticas
+        st.markdown("### 📊 Estatísticas de Amplitude")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Média - Início", round(inicio[coluna_inicio].mean(), 2))
+            st.metric("Mediana - Início", round(inicio[coluna_inicio].median(), 2))
+        with col2:
+            st.metric("Média - Final", round(final[coluna_final].mean(), 2))
+            st.metric("Mediana - Final", round(final[coluna_final].median(), 2))
 
-    # Cálculo dos picos
-    picos_i, duracoes_i, media_i = calcular_tempos_picos(dados_i, fps_inicio, limiar_i, 5)
-    picos_f, duracoes_f, media_f = calcular_tempos_picos(dados_f, fps_final, limiar_f, 2)
+        # === Limiar definido pelo usuário
+        st.markdown("### ⚙️ Definir Limiar para Análise de Picos")
+        col1, col2 = st.columns(2)
+        with col1:
+            limiar_i = st.number_input("Limiar Início (graus)", min_value=0.0, max_value=180.0, value=35.0, step=1.0)
+        with col2:
+            limiar_f = st.number_input("Limiar Final (graus)", min_value=0.0, max_value=180.0, value=45.0, step=1.0)
 
-    # Classificação com base nas durações
-    classificacoes_i = classificar(duracoes_i)
-    classificacoes_f = classificar(duracoes_f)
+        # === Picos e classificação
+        st.markdown("### 📌 Análise e Classificação do Movimento Esperado")
 
-    # Gráficos interativos dos picos
-    st.subheader("🔎 Identificação do Movimento Esperado")
-    tempo_inicio = np.arange(len(dados_i)) / fps_inicio
-    tempo_final = np.arange(len(dados_f)) / fps_final
+        dados_i = inicio[coluna_inicio]
+        dados_f = final[coluna_final]
 
-    fig_i = plot_intervalos_picos(tempo_inicio, dados_i, limiar_i, picos_i, "Movimento Esperado - Início")
-    fig_f = plot_intervalos_picos(tempo_final, dados_f, limiar_f, picos_f, "Movimento Esperado - Final")
+        # Cálculo dos picos
+        picos_i, duracoes_i, media_i = calcular_tempos_picos(dados_i, fps_inicio, limiar_i, 5)
+        picos_f, duracoes_f, media_f = calcular_tempos_picos(dados_f, fps_final, limiar_f, 2)
 
-    st.plotly_chart(fig_i, use_container_width=True)
-    st.plotly_chart(fig_f, use_container_width=True)
+        # Classificação com base nas durações
+        classificacoes_i = classificar(duracoes_i)
+        classificacoes_f = classificar(duracoes_f)
 
-    # Estatísticas
-    st.write(f"⏱️ Média dos movimentos iniciais: **{media_i:.2f}s**")
-    st.write(f"⏱️ Média dos movimentos finais: **{media_f:.2f}s**")
+        # Gráficos interativos dos picos
+        st.subheader("🔎 Identificação do Movimento Esperado")
+        tempo_inicio = np.arange(len(dados_i)) / fps_inicio
+        tempo_final = np.arange(len(dados_f)) / fps_final
 
-    if classificacoes_i:
-        st.write("**Classificação Início:**", ', '.join(classificacoes_i))
+        fig_i = plot_intervalos_picos(tempo_inicio, dados_i, limiar_i, picos_i, "Movimento Esperado - Início")
+        fig_f = plot_intervalos_picos(tempo_final, dados_f, limiar_f, picos_f, "Movimento Esperado - Final")
+
+        st.plotly_chart(fig_i, use_container_width=True)
+        st.plotly_chart(fig_f, use_container_width=True)
+
+        # Estatísticas
+        st.write(f"⏱️ Média dos movimentos iniciais: **{media_i:.2f}s**")
+        st.write(f"⏱️ Média dos movimentos finais: **{media_f:.2f}s**")
+
+        if classificacoes_i:
+            st.write("**Classificação Início:**", ', '.join(classificacoes_i))
+        else:
+            st.write("**Classificação Início:** Nenhum pico identificado")
+
+        if classificacoes_f:
+            st.write("**Classificação Final:**", ', '.join(classificacoes_f))
+        else:
+            st.write("**Classificação Final:** Nenhum pico identificado")
+
+        # === Gráfico de Dispersão dos Picos
+        st.markdown("### 🔍 Dispersão - Nível dos Movimentos Iniciais e Finais")
+
+        fig_picos = go.Figure()
+        fig_picos.add_trace(go.Scatter(
+            x=list(range(len(duracoes_i))),
+            y=duracoes_i,
+            mode='markers',
+            name='Movimentos Iniciais',
+            marker=dict(color='blue', size=10)
+        ))
+        fig_picos.add_trace(go.Scatter(
+            x=list(range(len(duracoes_f))),
+            y=duracoes_f,
+            mode='markers',
+            name='Movimentos Finais',
+            marker=dict(color='red', size=10)
+        ))
+
+        fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
+                            y0=5, y1=5, line=dict(color="green", dash="dash"))
+        fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
+                            y0=9, y1=9, line=dict(color="purple", dash="dash"))
+
+        fig_picos.update_layout(
+            title="Dispersão dos Movimentos Iniciais e Finais",
+            xaxis_title="Índice",
+            yaxis_title="Duração (s)",
+            legend=dict(x=0.01, y=0.99),
+            height=400
+        )
+        st.plotly_chart(fig_picos, use_container_width=True)
+    
     else:
-        st.write("**Classificação Início:** Nenhum pico identificado")
-
-    if classificacoes_f:
-        st.write("**Classificação Final:**", ', '.join(classificacoes_f))
-    else:
-        st.write("**Classificação Final:** Nenhum pico identificado")
-
-    # === Gráfico de Dispersão dos Picos
-    st.markdown("### 🔍 Dispersão - Nível dos Movimentos Iniciais e Finais")
-
-    fig_picos = go.Figure()
-    fig_picos.add_trace(go.Scatter(
-        x=list(range(len(duracoes_i))),
-        y=duracoes_i,
-        mode='markers',
-        name='Movimentos Iniciais',
-        marker=dict(color='blue', size=10)
-    ))
-    fig_picos.add_trace(go.Scatter(
-        x=list(range(len(duracoes_f))),
-        y=duracoes_f,
-        mode='markers',
-        name='Movimentos Finais',
-        marker=dict(color='red', size=10)
-    ))
-
-    fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
-                        y0=5, y1=5, line=dict(color="green", dash="dash"))
-    fig_picos.add_shape(type="line", x0=0, x1=max(len(duracoes_i), len(duracoes_f)),
-                        y0=9, y1=9, line=dict(color="purple", dash="dash"))
-
-    fig_picos.update_layout(
-        title="Dispersão dos Movimentos Iniciais e Finais",
-        xaxis_title="Índice",
-        yaxis_title="Duração (s)",
-        legend=dict(x=0.01, y=0.99),
-        height=400
-    )
-    st.plotly_chart(fig_picos, use_container_width=True)
+        st.warning("Selecione o lado para continuar a análise detalhada.")

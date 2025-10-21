@@ -99,14 +99,14 @@ with abas[2]:
                 colunas_numericas = tabela.select_dtypes(include=['float', 'int']).columns
                 st.dataframe(tabela.style.format({col: "{:.2f}" for col in colunas_numericas}))
 
-                st.markdown(f"### 🧾 Interpretação")
-                st.success(interpretacao)
+                #st.markdown(f"### 🧾 Interpretação")
+                #st.success(interpretacao)
 
                 # Exibir outliers se houver
-                if pontos_outliers is not None and not pontos_outliers.empty:
-                    st.markdown("### ⚠️ Movimentos Fora do Padrão (Cluster -1)")
-                    st.warning("Os movimentos abaixo foram classificados como **compensações ou execuções atípicas**.")
-                    st.dataframe(pontos_outliers)
+                #if pontos_outliers is not None and not pontos_outliers.empty:
+                    #st.markdown("### ⚠️ Movimentos Fora do Padrão (Cluster -1)")
+                    #st.warning("Os movimentos abaixo foram classificados como **compensações ou execuções atípicas**.")
+                    #st.dataframe(pontos_outliers)
 
             else:
                 st.warning(interpretacao)
